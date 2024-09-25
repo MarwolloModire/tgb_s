@@ -54,9 +54,14 @@ from dotenv import load_dotenv
 import telebot
 from telebot import types
 import paramiko
+from loguru import logger
 
 # Загружаем переменные окружения из .env файла
 load_dotenv()
+
+
+# Настраиваем Loguru
+logger.add("bot_log.log", format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip")  # noqa # isort: ignore
 
 # Получаем токен бота и список разрешённых пользователей
 BOT_API_TOKEN = os.getenv('BOT_API_TOKEN')
@@ -65,10 +70,18 @@ if ALLOWED_USER_IDS is None:
     raise ValueError("ALLOWED_USER_IDS не установлены в .env файле.")
 ALLOWED_USER_IDS = list(map(int, ALLOWED_USER_IDS.split(',')))
 
-# Получаем путь к приватному ключу из переменной окружения
-private_key_path = os.getenv('PRIVATE_KEY_PATH')
-if private_key_path is None:
-    raise ValueError("PRIVATE_KEY_PATH не установлены в .env файле.")
+# Получение путей к ключам из переменных окружения
+private_key_linux1 = os.getenv('PRIVATE_KEY_PATH_LINUX1')
+private_key_linux2 = os.getenv('PRIVATE_KEY_PATH_LINUX2')
+private_key_windows = os.getenv('PRIVATE_KEY_PATH_WINDOWS')
+
+# Проверка наличия ключей
+if private_key_linux1 is None:
+    raise ValueError("PRIVATE_KEY_PATH_LINUX1 не установлены в .env файле.")
+if private_key_linux2 is None:
+    raise ValueError("PRIVATE_KEY_PATH_LINUX2 не установлены в .env файле.")
+if private_key_windows is None:
+    raise ValueError("PRIVATE_KEY_PATH_WINDOWS не установлены в .env файле.")
 
 # Инициализируем бота с токеном
 bot = telebot.TeleBot(BOT_API_TOKEN)
@@ -89,22 +102,80 @@ def start(message):
 
 # Функция для управления удалёнными компьютерами
 def manage_remote_computers():
-    # Выключение Linux машин
-    linux_ips = ['192.168.88.126']
-    linux_port = 9091
-    linux_user = 'magna'  # Имя пользователя
+    # Список Linux машин и соответствующие пути к ключам
+    linux_machines = [
+        {"ip": "192.168.88.126", "port": 9091, "user": "root", "key_path": private_key_linux1},  # noqa # isort: ignore
+        {"ip": "192.168.88.127", "port": 9091, "user": "root", "key_path": private_key_linux2}  # noqa # isort: ignore
+    ]
 
-    for ip in linux_ips:
+    # Работа с Linux машинами
+    for machine in linux_machines:
+        ip = machine['ip']
+        port = machine['port']
+        user = machine['user']
+        key_path = machine['key_path']
+
+        logger.info(f"Попытка подключения к {ip}:{port}")
         try:
-            # Используем Paramiko для SSH подключения и выполнения команды
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(ip, port=linux_port, username=linux_user,
-                        key_filename=private_key_path)  # Используем путь к ключу
-            ssh.exec_command('sudo shutdown now')  # Выключение Linux
+            logger.info(f"Используем ключ {key_path} для подключения.")
+
+            # Подключение
+            ssh.connect(ip, port=port, username=user, key_filename=key_path)  # noqa # isort: ignore
+            logger.info(f"Успешно подключились к {ip}. Отправляем команду на выключение.")  # noqa # isort: ignore
+            # Выключение Linux машины
+            stdin, stdout, stderr = ssh.exec_command('shutdown now')  # noqa # isort: ignore
+            # Получение статуса выполнения команды
+            exit_status = stdout.channel.recv_exit_status()
+
+            if exit_status == 0:
+                logger.info(f"Команда на выключение Линукс машины с ip {ip} выполнена успешно.")  # noqa # isort: ignore
+            else:
+                logger.error(
+                    f"Команда завершилась с ошибкой. Код: {exit_status}")
+
             ssh.close()
         except Exception as e:
-            print(f"Ошибка при подключении к {ip}: {e}")
+            logger.error(f"Ошибка при подключении к {ip}: {e}")
+
+    # Список Windows машин и соответствующие пути к ключам
+    windows_machines = [
+        {"ip": "192.168.88.200", "port": 9092, "user": "Administrator", "key_path": private_key_windows}  # noqa # isort: ignore
+    ]
+
+    # Работа с Windows машинами
+    for machine in windows_machines:
+        ip = machine['ip']
+        port = machine['port']
+        user = machine['user']
+        key_path = machine['key_path']
+
+        logger.info(f"Попытка подключения к {ip}:{port}")
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            logger.info(f"Используем ключ {key_path} для подключения.")
+
+            # Подключение
+            ssh.connect(ip, port=port, username=user, key_filename=key_path)  # noqa # isort: ignore
+            logger.info(f"Успешно подключились к {ip}. Отправляем команду на перезагрузку.")  # noqa # isort: ignore
+
+            # Перезагрузка Windows машины
+            stdin, stdout, stderr = ssh.exec_command('shutdown /r /t 0')  # noqa # isort: ignore
+
+            # Получение статуса выполнения команды
+            exit_status = stdout.channel.recv_exit_status()
+
+            if exit_status == 0:
+                logger.info(f"Команда на перезагрузку Windows машины с ip {ip} выполнена успешно.")  # noqa # isort: ignore
+            else:
+                logger.error(
+                    f"Команда завершилась с ошибкой. Код: {exit_status}")
+
+            ssh.close()
+        except Exception as e:
+            logger.error(f"Ошибка при подключении к {ip}: {e}")
 
 
 # Обработчик кнопки "Выключить удаленные компьютеры"
@@ -125,3 +196,11 @@ def handle_text(message):
 # Запуск бота
 if __name__ == '__main__':
     bot.polling(none_stop=True)
+
+''' После запускать бота командой 
+sudo docker run -d --restart always \
+    -v /home/mikh/magna-prv2:/home/mikh/magna-prv2 \
+    -v /path/to/another/key:/path/to/another/key \
+    -v /path/to/yet/another/key:/path/to/yet/another/key \
+    имя_образа 
+'''
