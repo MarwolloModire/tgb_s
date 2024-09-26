@@ -141,7 +141,7 @@ def manage_remote_computers():
 
     # Список Windows машин и соответствующие пути к ключам
     windows_machines = [
-        {"ip": "192.168.88.200", "port": 9092, "user": "Administrator", "key_path": private_key_windows}  # noqa
+        {"ip": "95.66.166.30", "port": 8097, "user": "olga", "key_path": private_key_windows}  # noqa
     ]
 
     # Работа с Windows машинами
@@ -196,7 +196,7 @@ def handle_text(message):
 if __name__ == '__main__':
     bot.polling(none_stop=True)
 
-''' После запускать бота командой 
+''' После билда запускать бота командой 
 sudo docker run -d --restart always \
     -v /home/mikh/magna-prv2:/home/mikh/magna-prv2 \
     -v /path/to/another/key:/path/to/another/key \
