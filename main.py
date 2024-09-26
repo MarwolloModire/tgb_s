@@ -1,3 +1,4 @@
+# Этот бот отключает машину на которой запущен!
 # import os
 # from dotenv import load_dotenv
 # import telebot
@@ -38,7 +39,7 @@
 #             if os.name == 'nt':  # Windows
 #                 os.system('shutdown /s /f /t 0')
 #             elif os.name == 'posix':  # Linux/MacOS
-#                 os.system('sudo shutdown now')
+#                 os.system('shutdown now')
 #         else:
 #             bot.send_message(message.chat.id, "Неправильная команда.")
 #     else:
@@ -61,7 +62,7 @@ load_dotenv()
 
 
 # Настраиваем Loguru
-logger.add("bot_log.log", format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip")  # noqa # isort: ignore
+logger.add("bot_log.log", format="{time} {level} {message}", level="DEBUG", rotation="1 MB", compression="zip")  # noqa
 
 # Получаем токен бота и список разрешённых пользователей
 BOT_API_TOKEN = os.getenv('BOT_API_TOKEN')
@@ -104,8 +105,8 @@ def start(message):
 def manage_remote_computers():
     # Список Linux машин и соответствующие пути к ключам
     linux_machines = [
-        {"ip": "192.168.88.126", "port": 9091, "user": "root", "key_path": private_key_linux1},  # noqa # isort: ignore
-        {"ip": "192.168.88.127", "port": 9091, "user": "root", "key_path": private_key_linux2}  # noqa # isort: ignore
+        {"ip": "192.168.88.126", "port": 9091, "user": "root", "key_path": private_key_linux1},  # noqa
+        {"ip": "192.168.88.127", "port": 9091, "user": "root", "key_path": private_key_linux2}  # noqa
     ]
 
     # Работа с Linux машинами
@@ -122,18 +123,17 @@ def manage_remote_computers():
             logger.info(f"Используем ключ {key_path} для подключения.")
 
             # Подключение
-            ssh.connect(ip, port=port, username=user, key_filename=key_path)  # noqa # isort: ignore
-            logger.info(f"Успешно подключились к {ip}. Отправляем команду на выключение.")  # noqa # isort: ignore
+            ssh.connect(ip, port=port, username=user, key_filename=key_path)  # noqa
+            logger.info(f"Успешно подключились к {ip}. Отправляем команду на выключение.")  # noqa
             # Выключение Linux машины
-            stdin, stdout, stderr = ssh.exec_command('shutdown now')  # noqa # isort: ignore
+            stdin, stdout, stderr = ssh.exec_command('shutdown now')  # noqa
             # Получение статуса выполнения команды
             exit_status = stdout.channel.recv_exit_status()
 
             if exit_status == 0:
-                logger.info(f"Команда на выключение Линукс машины с ip {ip} выполнена успешно.")  # noqa # isort: ignore
+                logger.info(f"Команда на выключение Линукс машины с ip {ip} выполнена успешно.")  # noqa
             else:
-                logger.error(
-                    f"Команда завершилась с ошибкой. Код: {exit_status}")
+                logger.error(f"Команда завершилась с ошибкой. Код: {exit_status}")  # noqa
 
             ssh.close()
         except Exception as e:
@@ -141,7 +141,7 @@ def manage_remote_computers():
 
     # Список Windows машин и соответствующие пути к ключам
     windows_machines = [
-        {"ip": "192.168.88.200", "port": 9092, "user": "Administrator", "key_path": private_key_windows}  # noqa # isort: ignore
+        {"ip": "192.168.88.200", "port": 9092, "user": "Administrator", "key_path": private_key_windows}  # noqa
     ]
 
     # Работа с Windows машинами
@@ -158,20 +158,19 @@ def manage_remote_computers():
             logger.info(f"Используем ключ {key_path} для подключения.")
 
             # Подключение
-            ssh.connect(ip, port=port, username=user, key_filename=key_path)  # noqa # isort: ignore
-            logger.info(f"Успешно подключились к {ip}. Отправляем команду на перезагрузку.")  # noqa # isort: ignore
+            ssh.connect(ip, port=port, username=user, key_filename=key_path)  # noqa
+            logger.info(f"Успешно подключились к {ip}. Отправляем команду на перезагрузку.")  # noqa
 
             # Перезагрузка Windows машины
-            stdin, stdout, stderr = ssh.exec_command('shutdown /r /t 0')  # noqa # isort: ignore
+            stdin, stdout, stderr = ssh.exec_command('shutdown /r /t 0')  # noqa #
 
             # Получение статуса выполнения команды
             exit_status = stdout.channel.recv_exit_status()
 
             if exit_status == 0:
-                logger.info(f"Команда на перезагрузку Windows машины с ip {ip} выполнена успешно.")  # noqa # isort: ignore
+                logger.info(f"Команда на перезагрузку Windows машины с ip {ip} выполнена успешно.")  # noqa
             else:
-                logger.error(
-                    f"Команда завершилась с ошибкой. Код: {exit_status}")
+                logger.error(f"Команда завершилась с ошибкой. Код: {exit_status}")  # noqa
 
             ssh.close()
         except Exception as e:
@@ -186,7 +185,7 @@ def handle_text(message):
             bot.send_message(
                 message.chat.id, "Выполняю команды для удаленных компьютеров...")
             manage_remote_computers()
-            bot.send_message(message.chat.id, "Команды выполнены.")
+            bot.send_message(message.chat.id, "Команды выполнены.", reply_markup=types.ReplyKeyboardRemove())  # noqa
         else:
             bot.send_message(message.chat.id, "Неправильная команда.")
     else:
@@ -202,5 +201,5 @@ sudo docker run -d --restart always \
     -v /home/mikh/magna-prv2:/home/mikh/magna-prv2 \
     -v /path/to/another/key:/path/to/another/key \
     -v /path/to/yet/another/key:/path/to/yet/another/key \
-    имя_образа 
+    имя_образа
 '''

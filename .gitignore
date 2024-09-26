@@ -65,6 +65,9 @@ db.sqlite3-journal
 instance/
 .webassets-cache
 
+#Flake8
+.flake8
+
 # Scrapy stuff:
 .scrapy
 
@@ -113,6 +116,9 @@ ipython_config.py
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
+
+# Prettier
+.prettierrc
 
 # Celery stuff
 celerybeat-schedule
