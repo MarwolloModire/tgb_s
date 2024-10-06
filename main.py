@@ -105,8 +105,8 @@ def start(message):
 def manage_remote_computers():
     # Список Linux машин и соответствующие пути к ключам
     linux_machines = [
-        {"ip": "192.168.88.126", "port": 9091, "user": "root", "key_path": private_key_linux1},  # noqa
-        {"ip": "192.168.88.127", "port": 9091, "user": "root", "key_path": private_key_linux2}  # noqa
+        {"ip": "195.133.45.13", "port": 22, "user": "root", "key_path": private_key_linux1},  # noqa
+        {"ip": "10.193.2.14", "port": 9011, "user": "root", "key_path": private_key_linux2}  # noqa
     ]
 
     # Работа с Linux машинами
@@ -141,7 +141,7 @@ def manage_remote_computers():
 
     # Список Windows машин и соответствующие пути к ключам
     windows_machines = [
-        {"ip": "95.66.166.30", "port": 8097, "user": "olga", "key_path": private_key_windows}  # noqa
+        {"ip": "10.193.2.33", "port": 9012, "user": "Администратор", "key_path": private_key_windows}  # noqa
     ]
 
     # Работа с Windows машинами
